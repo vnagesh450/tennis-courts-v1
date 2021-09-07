@@ -1,9 +1,10 @@
 package com.tenniscourts.tenniscourts;
 
+import org.springframework.stereotype.Service;
+
 import com.tenniscourts.exceptions.EntityNotFoundException;
 import com.tenniscourts.schedules.ScheduleService;
 import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor

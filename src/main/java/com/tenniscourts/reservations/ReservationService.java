@@ -1,6 +1,7 @@
 package com.tenniscourts.reservations;
 
 import com.tenniscourts.exceptions.EntityNotFoundException;
+import com.tenniscourts.schedules.ScheduleService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,8 @@ import java.time.temporal.ChronoUnit;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+
+    private final ScheduleService scheduleService;
 
     private final ReservationMapper reservationMapper;
 
@@ -62,21 +65,27 @@ public class ReservationService {
     }
 
     public BigDecimal getRefundValue(Reservation reservation) {
-        long hours = ChronoUnit.HOURS.between(LocalDateTime.now(), reservation.getSchedule().getStartDateTime());
+        long minutes = ChronoUnit.MINUTES.between(LocalDateTime.now(), reservation.getSchedule().getStartDateTime());
 
-        if (hours >= 24) {
+        if (minutes >= 24 * 60) {
             return reservation.getValue();
+        } else if (minutes >= 12 * 60) {
+            return reservation.getValue().multiply(BigDecimal.valueOf(0.75));
+        } else if (minutes >= 2 * 60) {
+            return reservation.getValue().multiply(BigDecimal.valueOf(0.50));
+        } else if (minutes >= 1) {
+            return reservation.getValue().multiply(BigDecimal.valueOf(0.25));
+        } else {
+            return BigDecimal.ZERO;
         }
-
-        return BigDecimal.ZERO;
     }
 
-    /*TODO: This method actually not fully working, find a way to fix the issue when it's throwing the error:
-            "Cannot reschedule to the same slot.*/
     public ReservationDTO rescheduleReservation(Long previousReservationId, Long scheduleId) {
         Reservation previousReservation = cancel(previousReservationId);
 
-        if (scheduleId.equals(previousReservation.getSchedule().getId())) {
+        LocalDateTime newScheduleStartDateTime = scheduleService.findSchedule(scheduleId).getStartDateTime();
+        LocalDateTime prevScheduleStartDateTime = previousReservation.getSchedule().getStartDateTime();
+        if (newScheduleStartDateTime.isEqual(prevScheduleStartDateTime)) {
             throw new IllegalArgumentException("Cannot reschedule to the same slot.");
         }
 
